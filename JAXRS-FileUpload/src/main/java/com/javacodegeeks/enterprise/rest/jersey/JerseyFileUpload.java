@@ -1,10 +1,17 @@
 package com.javacodegeeks.enterprise.rest.jersey;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.Map;
+import java.util.Properties;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -20,7 +27,7 @@ import com.sun.jersey.multipart.FormDataParam;
 @Path("/upload")
 public class JerseyFileUpload {
 
-	private static final String SERVER_UPLOAD_LOCATION_FOLDER = "C://jetty-distribution-9.2.19.v20160908/webapps/IMWebSocket/Upload_Files/";
+	private static final String SERVER_UPLOAD_LOCATION_FOLDER = "C://jetty-distribution-9.2.19.v20160908/webapps/Upload_Files/";
 
 	/**
 	 * Upload a Image
@@ -33,15 +40,18 @@ public class JerseyFileUpload {
 			@FormDataParam("file") InputStream fileInputStream,
 			@FormDataParam("file") FormDataContentDisposition contentDispositionHeader) {
 
+		Map<String, String> FileMap = contentDispositionHeader.getParameters();
+		//System.out.println("FileName: "+FileMap.get("filename"));
+		String FileName = FileMap.get("filename");
+		
 		String filePath = SERVER_UPLOAD_LOCATION_FOLDER
-				+ contentDispositionHeader.getFileName();
-		System.out.println("filePath: "+filePath);
-
+				+ FileName;
+		
 		// save the file to the server
 		saveFile(fileInputStream, filePath);
 		
-		String postfilePath = "http://ws.crm.com.tw:8080/IMWebSocket/Upload_Files/"
-					+contentDispositionHeader.getFileName();
+		String postfilePath = "http://ws.crm.com.tw:8080/Upload_Files/"
+					+FileName;
 		
 		JSONObject jsonObject = new JSONObject();
 		JSONObject datajsonObject = new JSONObject();
@@ -71,21 +81,39 @@ public class JerseyFileUpload {
 	public Response uploadFile(
 			@FormDataParam("file") InputStream fileInputStream,
 			@FormDataParam("file") FormDataContentDisposition contentDispositionHeader) {
-
+		
+		Map<String, String> FileMap = contentDispositionHeader.getParameters();
+		//System.out.println("FileName: "+FileMap.get("filename"));
+		String FileName = FileMap.get("filename");
+		
 		String filePath = SERVER_UPLOAD_LOCATION_FOLDER
-				+ contentDispositionHeader.getFileName();
-		System.out.println("filePath: "+filePath);
-
+				+ FileName;
+		
 		// save the file to the server
 		saveFile(fileInputStream, filePath);
 		
-		String postfilePath = "http://ws.crm.com.tw:8080/IMWebSocket/Upload_Files/"
-					+contentDispositionHeader.getFileName();
+		Properties prop = new Properties();
+		try {
+			prop.load(new FileInputStream("config.properties"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		String Upload_Files_protocol = prop.getProperty("Upload_Files.protocol");
+		String Upload_Files_hostname = prop.getProperty("Upload_Files.hostname");
+		String Upload_Files_port = prop.getProperty("Upload_Files.port");
+		
+		String postfilePath = Upload_Files_protocol+"//"+Upload_Files_hostname+":"+Upload_Files_port+"/Upload_Files/"
+					+FileName;
 		
 		JSONObject jsonObject = new JSONObject();
 		JSONObject datajsonObject = new JSONObject();
 		datajsonObject.put("src", postfilePath);
-		datajsonObject.put("name", contentDispositionHeader.getFileName());
+		datajsonObject.put("name", FileName);
 		jsonObject.put("data", datajsonObject);
 		jsonObject.put("msg", "");
 		jsonObject.put("code", 0);
